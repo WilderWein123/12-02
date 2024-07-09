@@ -52,6 +52,16 @@ ALTER USER 'sys_test'@'localhost' IDENTIFIED WITH mysql_native_password BY 'pass
 Ну как таковой простыни не было, тк восстанавливал я через IDE dbeaver. Создал БД, правой кнопкой на название, tools, restore database, 
 дальше указал путь к клиенту mysql /usr/bin , импортировал схему, импортировал базу.
 
+Но кажется, если бы я делал это из консоли, получилось бы следующее:
+
+```
+wget https://downloads.mysql.com/docs/sakila-db.zip
+gunzip sakila-db.zip
+mysql -u sys_temp -p sakila < sakila-db/sakila-schema.sql
+mysql -u sys_temp -p sakila < sakila-db/sakila-data.sql
+rm -rf sakila-db
+```
+
 <img src = "img/img3.jpg" width = 100%>
 
 ### Задание 2
@@ -93,3 +103,29 @@ store	store_id
 3.2. Выполните запрос на получение списка прав для пользователя sys_temp. (скриншот)
 
 *Результатом работы должны быть скриншоты обозначенных заданий, а также простыня со всеми запросами.*
+
+Ну раз требуется простыня запросов, видимо, работа явно предстоит не с IDE.
+
+Смотрим список пользователей
+```
+select user from mysql.user;
+
+```
+Смотрим какие есть права. Для этого делаем выборку по всей БД users и лимитируем выхлоп до 1 (нужны только имена)
+```
+select * from mysql.user limit 1;
+```
+В задаче нужно убрать права на внесение, изменение удаление из бд sakila. Но мы дали пользователю все права. Поэтому сначала нам надо дать ему все права на базу, а потом отобрать несколько.
+```
+grant all privileges on sakila.* to 'sys_temp'@'%';
+revoke Create, Insert, Update, Delete on sakila.* from 'sys_temp';
+SHOW GRANTS FOR 'sys_temp'@'%';
+```
+В выхлопе видим права пользователя на весь сервер, как мы и задали вначале:
+```
+| GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, RELOAD, SHUTDOWN, PROCESS, FILE, REFERENCES, INDEX, ALTER, SHOW DATABASES, SUPER, CREATE TEMPORARY TABLES, LOCK TABLES, EXECUTE, REPLICATION SLAVE, REPLICATION CLIENT, CREATE VIEW, SHOW VIEW, CREATE ROUTINE, ALTER ROUTINE, CREATE USER, EVENT, TRIGGER, CREATE TABLESPACE, CREATE ROLE, DROP ROLE ON *.* TO `sys_temp`@`%` WITH GRANT OPTION 
+```
+Но прав на базу у него уже нет (отсутствуют SELECT, INSERT, UPDATE, DELETE):
+```
+| GRANT SELECT, DROP, REFERENCES, INDEX, ALTER, CREATE TEMPORARY TABLES, LOCK TABLES, EXECUTE, CREATE VIEW, SHOW VIEW, CREATE ROUTINE, ALTER ROUTINE, EVENT, TRIGGER ON `sakila`.* TO `sys_temp`@`%` WITH GRANT OPTION  
+```
